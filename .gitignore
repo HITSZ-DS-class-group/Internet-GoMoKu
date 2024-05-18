@@ -9,6 +9,8 @@
 
 # .vscode 配置
 .vscode
+# 移动操作
+move.bat
 
 # target 文件夹
 target

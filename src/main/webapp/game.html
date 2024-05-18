@@ -1,0 +1,103 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>五子棋</title>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+    <script>
+        // 初始化一个 15x15 的二维字符数组
+      let board = Array.from({ length: 15 }, () => Array(15).fill('\0'));
+
+      //   // 输出初始化后的二维数组
+      // console.log(board);
+      let playerName = '';
+      let socket;
+
+      function renderBoard() {
+        const table = document.getElementById('board');
+        table.innerHTML = '';
+
+        for (let i = 0; i < board.length; i++) {
+          const row = document.createElement('tr');
+          for (let j = 0; j < board[i].length; j++) {
+            const cell = document.createElement('td');
+            cell.dataset.row = i;
+            cell.dataset.col = j;
+            if (board[i][j] === '\0') {
+              cell.innerHTML = `<img src="/gomoku/images/empty.gif" style="width:30px;height:30px;" onclick="forwardMove(${i}, ${j})">`;
+            } else if (board[i][j] === 'X') {
+              cell.innerHTML = `<img src="/gomoku/images/x.gif" style="width:30px;height:30px;">`;
+            } else if (board[i][j] === 'O') {
+              cell.innerHTML = `<img src="/gomoku/images/o.gif" style="width:30px;height:30px;">`;
+            }
+            row.appendChild(cell);
+          }
+          table.appendChild(row);
+        }
+      }
+
+      function forwardMove(row, col) {
+        if (board[row][col] === '\0') {  // Only allow move if the cell is empty
+            socket.send(JSON.stringify({msgKind:'move',moveKind:'forward',place:{row: row, col: col}}));
+        }
+      }
+
+      function startGame() {
+        const input = document.getElementById('playerName');
+        playerName = input.value;
+        document.getElementById('welcome').innerText = `欢迎, ${playerName}！`;
+        document.getElementById('status').innerText = `等待对手连接...`;
+        document.getElementById('startButton').style.display = 'none';
+
+        // Initialize WebSocket connection
+        socket = new WebSocket('ws://' + window.location.host + '/gomoku/game');
+        socket.onopen = function() {
+          socket.send(JSON.stringify({msgKind: 'start', name : playerName}));
+        }
+        socket.onmessage = function(event) {
+          const data = JSON.parse(event.data);
+          if (data.msgKind == 'move') {
+            const place = data.place;
+            board[place.row][place.col] = data.color;
+            renderBoard();
+          }
+          if (data.msgKind == 'start') {
+            const player1Name = data.name;
+            const player2Name = data.opName;
+            document.getElementById('status').innerText = `对战开始`;
+            document.getElementById('game').innerText = `${player1Name} vs ${player2Name}`;
+            renderBoard();
+          }
+          if (data.msgKind == 'wait') {
+            alert("请等待您的对手先下...");
+          }
+        };
+      }
+
+      window.onload = function() {
+          document.getElementById('startButton').onclick = startGame;
+      };
+    </script>
+</head>
+<body>
+    <h1>五子棋</h1>
+    <div>
+        <label for="playerName">请输入您的姓名：</label>
+        <input type="text" id="playerName" name="playerName">
+        <button id="startButton">开始游戏</button>
+    </div>
+    <h2 id="welcome"></h2>
+    <h2 id="status"></h2>
+    <h2 id="game"></h2>
+    <table id="board" border="1"></table>
+</body>
+</html>
