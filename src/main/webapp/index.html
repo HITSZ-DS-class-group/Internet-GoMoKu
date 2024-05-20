@@ -1,0 +1,90 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>gomoku</title>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+        td {
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            vertical-align: middle;
+        }
+    </style>
+    <script>
+      let board = [];
+
+      function loadBoard() {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/gomoku/init', true);
+          xhr.onload = function () {
+              if (xhr.status === 200) {
+                  board = JSON.parse(xhr.responseText);
+                  renderBoard();
+              }
+          };
+          xhr.send();
+      }
+
+      function renderBoard() {
+          const table = document.getElementById('board');
+          table.innerHTML = '';
+
+          for (let i = 0; i < board.length; i++) {
+              const row = document.createElement('tr');
+              for (let j = 0; j < board[i].length; j++) {
+                  const cell = document.createElement('td');
+                  cell.dataset.row = i;
+                  cell.dataset.col = j;
+                  if (board[i][j] === '\0') {
+                      cell.innerHTML = `<img src="/gomoku/images/empty.gif" style="width:30px;height:30px;" onclick="makeMove(${i}, ${j})">`;
+                  } else if (board[i][j] === 'X') {
+                      cell.innerHTML = `<img src="/gomoku/images/x.gif" style="width:30px;height:30px;">`;
+                  } else if (board[i][j] === 'O') {
+                      cell.innerHTML = `<img src="/gomoku/images/o.gif" style="width:30px;height:30px;">`;
+                  }
+                  row.appendChild(cell);
+              }
+              table.appendChild(row);
+          }
+      }
+
+      function makeMove(row, col) {
+          if (board[row][col] === '\0') {  // Only allow move if the cell is empty
+              const xhr = new XMLHttpRequest();
+              xhr.open('GET', `/gomoku/gomoku?move=${row},${col}`, true);
+              xhr.onload = function () {
+                  if (xhr.status === 200) {
+                      board = JSON.parse(xhr.responseText);
+                      renderBoard();
+                  }
+              };
+              xhr.send();
+          }
+      }
+
+      function startGame() {
+        const input = document.getElementById('playerName');
+            playerName = input.value;
+            document.getElementById('welcome').innerText = `欢迎, ${playerName}！`;
+            loadBoard();
+      }
+
+      window.onload = function() {
+        document.getElementById('startButton').onclick = startGame;
+      };
+  </script>
+</head>
+<body>
+    <h1>五子棋</h1>
+    <div>
+      <label for="playerName">请输入您的姓名：</label>
+      <input type="text" id="playerName" name="playerName">
+      <button id="startButton">开始游戏</button>
+    </div>
+    <h2 id="welcome"></h2>
+    <table id="board" border="1"></table>
+</body>
+</html>
